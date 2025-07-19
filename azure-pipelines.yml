@@ -2,7 +2,7 @@ trigger:
 - main
 
 pool:
-  name: Default  # Your self-hosted agent pool
+  name: Default
 
 variables:
   MAVEN_CACHE_FOLDER: $(HOME)/.m2/repository
