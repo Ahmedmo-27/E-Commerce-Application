@@ -2,14 +2,24 @@ trigger:
 - main
 
 pool:
-  name: Default
+  name: Default  # Your self-hosted agent pool
+
+variables:
+  MAVEN_CACHE_FOLDER: $(HOME)/.m2/repository
 
 steps:
-- script: mvn clean install
-  displayName: 'Build and run tests using Maven'
-
-- task: PublishTestResults@2
+- task: Cache@2
   inputs:
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    testRunTitle: 'Java Unit Tests'
-  condition: succeededOrFailed()
+    key: 'maven | "$(Agent.OS)" | **/pom.xml'
+    restoreKeys: |
+      maven | "$(Agent.OS)"
+    path: $(MAVEN_CACHE_FOLDER)
+  displayName: 'Restore Maven Cache'
+
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'clean install'
+    options: '-B'
+    publishJUnitResults: false
+  displayName: 'Build Java Project'
