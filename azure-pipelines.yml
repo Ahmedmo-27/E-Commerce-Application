@@ -1,27 +1,37 @@
 trigger:
-- main
+- main  # or your actual branch name
 
 pool:
-  name: Default  # Self-hosted agent pool
+  name: Default  # Your self-hosted agent pool
+  demands:
+    - maven
+    - Agent.OS -equals Windows_NT
 
 variables:
-  mavenCacheFolder: '$(UserProfile)\.m2\repository'
+  mavenCacheDir: '$(USERPROFILE)\.m2\repository'
 
 steps:
+# ----------- Restore Maven Cache -----------
 - task: Cache@2
   inputs:
     key: 'maven | "$(Agent.OS)" | **/pom.xml'
     restoreKeys: |
       maven | "$(Agent.OS)"
-    path: $(mavenCacheFolder)
-  displayName: 'Restore Maven Cache'
+    path: $(mavenCacheDir)
+    cacheHitVar: CACHE_RESTORED
+  displayName: 'Restore Maven cache'
 
-- script: mvn clean install
-  displayName: 'Build Project with Maven'
+# ----------- Build Project -----------
+- task: CmdLine@2
+  displayName: 'Build with Maven'
+  inputs:
+    script: |
+      mvn -B clean install
 
+# ----------- Save Maven Cache -----------
 - task: Cache@2
   inputs:
     key: 'maven | "$(Agent.OS)" | **/pom.xml'
-    path: $(mavenCacheFolder)
-  displayName: 'Save Maven Cache'
-  condition: succeeded()
+    path: $(mavenCacheDir)
+  condition: and(succeeded(), ne(variables['CACHE_RESTORED'], 'true'))
+  displayName: 'Save Maven cache'
