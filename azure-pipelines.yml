@@ -2,10 +2,10 @@ trigger:
 - main
 
 pool:
-  name: Default
+  name: Default  # Self-hosted agent pool
 
 variables:
-  MAVEN_CACHE_FOLDER: $(HOME)/.m2/repository
+  mavenCacheFolder: '$(UserProfile)\.m2\repository'
 
 steps:
 - task: Cache@2
@@ -13,13 +13,15 @@ steps:
     key: 'maven | "$(Agent.OS)" | **/pom.xml'
     restoreKeys: |
       maven | "$(Agent.OS)"
-    path: $(MAVEN_CACHE_FOLDER)
+    path: $(mavenCacheFolder)
   displayName: 'Restore Maven Cache'
 
-- task: Maven@3
+- script: mvn clean install
+  displayName: 'Build Project with Maven'
+
+- task: Cache@2
   inputs:
-    mavenPomFile: 'pom.xml'
-    goals: 'clean install'
-    options: '-B'
-    publishJUnitResults: false
-  displayName: 'Build Java Project'
+    key: 'maven | "$(Agent.OS)" | **/pom.xml'
+    path: $(mavenCacheFolder)
+  displayName: 'Save Maven Cache'
+  condition: succeeded()
